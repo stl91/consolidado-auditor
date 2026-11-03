@@ -21,9 +21,14 @@ async function load(){
     const response=await fetch(document.body.dataset.source||'./api/data',{cache:'no-store'});
     const result=await response.json();
     if(!response.ok)throw new Error(result.error||'Error al cargar datos');
+    const firstLoad=data===null;
     data={...result,today:snapshotMode?currentLimaDate():result.today};
-    const months=[...new Set(data.rows.flatMap(r=>[r.call?.slice(0,7),r.evaluation?.slice(0,7)]).filter(Boolean))].sort().reverse();
+    const currentMonth=data.today.slice(0,7);
+    const [year,month]=currentMonth.split('-').map(Number);
+    const previousMonth=`${month===1?year-1:year}-${String(month===1?12:month-1).padStart(2,'0')}`;
+    const months=[...new Set([currentMonth,previousMonth,...data.rows.flatMap(r=>[r.call?.slice(0,7),r.evaluation?.slice(0,7)]).filter(Boolean)])].sort().reverse();
     options('month',months.map(m=>[m,prettyMonth(m)]));
+    if(firstLoad)$('month').value=currentMonth;
     if(!$('cutoff').value)$('cutoff').value=data.today;
     $('cutoff').max=data.today;
     options('coverageAuditor',[...new Map(data.rows.map(r=>[r.auditor,r.auditorName]))].sort((a,b)=>a[1].localeCompare(b[1])),'Todos los auditores');
